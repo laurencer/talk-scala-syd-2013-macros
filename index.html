@@ -1,771 +1,876 @@
-<!DOCTYPE html>
-<!-- saved from url=(0043)http://localhost:1948/scala_syd_talk.md#/11 -->
-<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<!doctype html>
+<html lang="en">
+    <head>
         <meta charset="utf-8">
         <title>Reveal.js</title>
-        <link rel="stylesheet" href="reveal.css">
-        <link rel="stylesheet" href="default.css" id="theme">
-  <link rel="stylesheet" href="zenburn.min.css">
-    <style type="text/css"></style></head>
-    <body style="">
-        <div class="reveal default center" data-transition-speed="default" data-background-transition="default">
-            <div class="slides" style="width: 960px; height: 700px; zoom: 0.5001428571428572;"><section undefined="" data-markdown="" style="top: -340px; display: none;" class="past" hidden="" data-index-h="0"><h1>SCALA SYDNEY</h1>
-<p><code>import scala.language.experimental.{macros =&gt; magic}</code></p>
-</section><section undefined="" data-markdown="" style="top: -340px; display: none;" class="past" hidden="" data-index-h="1"><h3>Hi, My name is Laurence and I'm a Scala-holic</h3>
-</section><section undefined="" data-markdown="" style="top: -340px; display: none;" class="past" hidden="" data-index-h="2"><h2>Contents</h2>
-<ol>
-<li>What are Macros?</li>
-<li>How do we generate code?</li>
-<li>Example</li>
-<li>Pros, Cons and Questions</li>
-</ol>
-</section><section undefined="" data-markdown="" style="top: -340px; display: none;" class="past" hidden="" data-index-h="3"><h2>What are Scala Macros?</h2>
-<p>Scala Macros let you to generate <strong>type-safe</strong> code at compile-time.*</p>
+        <link rel="stylesheet" href="/css/reveal.css">
+        <link rel="stylesheet" href="/css/theme/default.css" id="theme">
+    </head>
+    <body>
+        <div class="reveal">
+            <div class="slides"><section undefined data-markdown><script type="text/template"># SCALA SYDNEY
+`import scala.language.experimental.{macros => magic}`
+</script></section><section undefined data-markdown><script type="text/template">
+### Hi, My name is Laurence and I'm a Scala-holic
+</script></section><section undefined data-markdown><script type="text/template">
+## Contents
+
+1. What are Macros?
+2. How do we generate code?
+3. Example
+4. Pros, Cons and Questions
+</script></section><section undefined data-markdown><script type="text/template">
+## What are Scala Macros?
+
+Scala Macros let you to generate **type-safe** code at compile-time.*
 <div>
 <small>* a bunch of other stuff which is coming in later releases.</small>
 </div>
-</section><section undefined="" data-markdown="" style="top: -340px; display: none;" class="past" hidden="" data-index-h="4"><h2>Quick Example (Normal Scala)</h2>
-<pre><code class="python">val test = <span class="number">123</span>
+</script></section><section undefined data-markdown><script type="text/template">
+## Quick Example (Normal Scala)
+    
+    val test = 123
 
-<span class="function"><span class="keyword">def</span> <span class="title">log</span><span class="params">(fieldName: String, value: AnyRef)</span> :</span> String = {
-  // this <span class="keyword">is</span> what we will be generating during compilation.
-  log.info(s<span class="string">"{fieldName} -&gt; {value}"</span>)
-}
+    def log(fieldName: String, value: AnyRef) : String = {
+      // this is what we will be generating during compilation.
+      log.info(s"{fieldName} -> {value}")
+    }
 
-log(<span class="string">"test"</span>, test)
+    log("test", test)
 
-=&gt; <span class="string">"test -&gt; 123"</span></code></pre>
-</section><section undefined="" data-markdown="" style="top: -340.5px; display: none;" class="past" hidden="" data-index-h="5"><h2>How we want to write it</h2>
-<pre><code class="php">val test = <span class="number">123</span>
+    => "test -> 123"
+</script></section><section undefined data-markdown><script type="text/template">
+## How we want to write it
 
-macroLog(test)
+    val test = 123
 
-=&gt; <span class="string">"test -&gt; 123"</span></code></pre>
-</section><section undefined="" data-markdown="" style="top: -340px; display: none;" class="past" hidden="" data-index-h="6"><h2>As a Macro</h2>
-<pre><code class="python">val test = <span class="number">123</span>
+    macroLog(test)
 
-// Our Macro Definition.
-<span class="function"><span class="keyword">def</span> <span class="title">betterLog</span><span class="params">(field: AnyRef)</span> :</span> String = 
-  macro codeGenerator
+    => "test -> 123"
+</script></section><section undefined data-markdown><script type="text/template">
+## As a Macro
 
-<span class="function"><span class="keyword">def</span> <span class="title">codeGenerator</span><span class="params">(c: Context)</span><span class="params">(field: c.Expr[AnyRef])</span> :</span> c.Expr[String] = {
-  // now generate the code!
-  ...
-}
+    val test = 123
 
-// Using our Macro
-betterLog(test) // the generated code <span class="keyword">is</span> swapped <span class="keyword">in</span> here.
+    // Our Macro Definition.
+    def betterLog(field: AnyRef) : String = 
+      macro codeGenerator
 
-=&gt; <span class="string">"test -&gt; 123"</span></code></pre>
-</section><section undefined="" data-markdown="" style="top: -340px; display: none;" class="past" hidden="" data-index-h="7"><h2>Scala Macros are Just Scala</h2>
-<ul>
-<li>Completely type-safe.</li>
-<li><strong>Macros must be compiled in a separate project.</strong></li>
-</ul>
-</section><section undefined="" data-markdown="" style="top: -336.5px; display: block;" class="past" hidden="" data-index-h="8"><h2>So how do we generate code?</h2>
-<p>We manipulate the <strong>abstract syntax tree</strong>.</p>
-<p>E.g. <code>plus(1, 2)</code></p>
-<ul>
-<li><p>Directly</p>
-<pre><code class="php">Apply(<span class="string">"plus"</span>, 
-  <span class="keyword">List</span>(
-    Literal(Constant(<span class="number">1</span>)), 
-    Literal(Constant(<span class="number">2</span>))
-))</code></pre>
-</li>
-<li><p>Reify</p>
-<pre><code class="undefined">reify {
-  plus(1, 2)
-}</code></pre>
-</li>
-<li><p>Quasiquotes (coming soon)</p>
-</li>
-</ul>
-</section><section undefined="" data-markdown="" style="top: -222px; display: block;" class="past" hidden="" data-index-h="9"><h2>Direct Manipulation</h2>
-<pre><code class="sql">Apply(
-  TypeApply(
-    <span class="operator"><span class="keyword">Select</span>(
-      <span class="keyword">Select</span>(
-        Ident(newTermName(<span class="string">"collection"</span>)), newTermName(<span class="string">"Seq"</span>)
-        ), newTermName(<span class="string">"apply"</span>)
+    def codeGenerator(c: Context)(field: c.Expr[AnyRef]) : c.Expr[String] = {
+      // now generate the code!
+      ...
+    }
+
+    // Using our Macro
+    betterLog(test) // the generated code is swapped in here.
+
+    => "test -> 123"
+</script></section><section undefined data-markdown><script type="text/template">
+## Scala Macros are Just Scala
+
+- Completely type-safe.
+- **Macros must be compiled in a separate project.**
+</script></section><section undefined data-markdown><script type="text/template">
+## So how do we generate code?
+
+We manipulate the **abstract syntax tree**.
+
+E.g. `plus(1, 2)`
+
+- Directly
+      
+      Apply("plus", 
+        List(
+          Literal(Constant(1)), 
+          Literal(Constant(2))
+      ))
+
+- Reify
+
+      reify {
+        plus(1, 2)
+      }
+
+- Quasiquotes (coming soon)
+</script></section><section undefined data-markdown><script type="text/template">
+## Direct Manipulation
+
+    Apply(
+      TypeApply(
+        Select(
+          Select(
+            Ident(newTermName("collection")), newTermName("Seq")
+            ), newTermName("apply")
+          ),
+        List(Ident(newTypeName("Integer")))
       ),
-    List(Ident(newTypeName(<span class="string">"Integer"</span>)))
-  ),
-  List(Literal(Constant(<span class="number">1</span>)), Literal(Constant(<span class="number">2</span>)), Literal(Constant(<span class="number">3</span>)))
-)</span></code></pre>
-</section><section undefined="" data-markdown="" style="top: -249px; display: block;" class="past" hidden="" data-index-h="10"><h2>Direct Manipulation</h2>
-<pre><code class="sql">Apply(
-  TypeApply(
-    <span class="operator"><span class="keyword">Select</span>(
-      <span class="keyword">Select</span>(
-        Ident(newTermName(<span class="string">"collection"</span>)), newTermName(<span class="string">"Seq"</span>)
-        ), newTermName(<span class="string">"apply"</span>)
+      List(Literal(Constant(1)), Literal(Constant(2)), Literal(Constant(3)))
+    )
+</script></section><section undefined data-markdown><script type="text/template">
+## Direct Manipulation
+
+    Apply(
+      TypeApply(
+        Select(
+          Select(
+            Ident(newTermName("collection")), newTermName("Seq")
+            ), newTermName("apply")
+          ),
+        List(Ident(newTypeName("Integer")))
       ),
-    List(Ident(newTypeName(<span class="string">"Integer"</span>)))
-  ),
-  List(Literal(Constant(<span class="number">1</span>)), Literal(Constant(<span class="number">2</span>)), Literal(Constant(<span class="number">3</span>)))
-)</span></code></pre>
-<p><code>Seq(1, 2, 3)</code></p>
-</section><section undefined="" data-markdown="" style="top: -308.5px; display: block;" class="present" data-index-h="11"><h2>Reify</h2>
-<pre><code class="java">val ast = context.reify {
-  <span class="keyword">import</span> scalaz.Scalaz._
+      List(Literal(Constant(1)), Literal(Constant(2)), Literal(Constant(3)))
+    )
 
-  generatedValidationResults.splice
-    .foldLeft(Valid : ValidationResult)(_ |+| _)
-}</code></pre>
-<p>becomes</p>
-<pre><code class="php"><span class="comment">// ast =&gt;</span>
-Expr(Block(<span class="keyword">List</span>(
-Import(Ident(scalaz.Scalaz), <span class="keyword">List</span>(ImportSelector(nme.WILDCARD, <span class="number">1975</span>, <span class="keyword">null</span>, -<span class="number">1</span>)))),
-Apply(Apply(Select(Apply(
-TypeApply(Select(Select(Ident(newTermName(<span class="string">"collection"</span>)), newTermName(<span class="string">"Seq"</span>)), newTermName(<span class="string">"apply"</span>)), <span class="keyword">List</span>(Ident(newTypeName(<span class="string">"ValidationResult"</span>)))),
-<span class="keyword">List</span>(Apply(Select(Apply(TypeApply(Select(Ident(newTermName(<span class="string">"Validatable"</span>)), newTermName(<span class="string">"apply"</span>)), <span class="keyword">List</span>(Ident(java.lang.String))), <span class="keyword">List</span>()), newTermName(<span class="string">"validate"</span>)), <span class="keyword">List</span>(Select(Ident(newTermName(<span class="string">"obj"</span>)), newTermName(<span class="string">"name"</span>)))), Apply(Select(Apply(TypeApply(Select(Ident(newTermName(<span class="string">"Validatable"</span>)), newTermName(<span class="string">"apply"</span>)), <span class="keyword">List</span>(Ident(java.lang.String))), <span class="keyword">List</span>()), newTermName(<span class="string">"validate"</span>)), <span class="keyword">List</span>(Select(Ident(newTermName(<span class="string">"obj"</span>)), newTermName(<span class="string">"reaction"</span>)))))), newTermName(<span class="string">"foldLeft"</span>)), 
-<span class="keyword">List</span>(Typed(Ident(Valid), Ident(ValidationResult)))), 
-<span class="keyword">List</span>(Function(<span class="keyword">List</span>(ValDef(Modifiers(PARAM | SYNTHETIC), newTermName(<span class="string">"x$3"</span>), TypeTree(), EmptyTree), 
-ValDef(Modifiers(PARAM | SYNTHETIC), newTermName(<span class="string">"x$4"</span>), TypeTree(), EmptyTree)), Apply(Select(Apply(Apply(Select(Ident(scalaz.Scalaz), newTermName(<span class="string">"ToSemigroupOps"</span>)), <span class="keyword">List</span>(Ident(newTermName(<span class="string">"x$3"</span>)))), <span class="keyword">List</span>(Select(Ident(ValidationResult), newTermName(<span class="string">"monoid"</span>)))), newTermName(<span class="string">"$bar$plus$bar"</span>)), <span class="keyword">List</span>(Ident(newTermName(<span class="string">"x$4"</span>)))))))))</code></pre>
-</section><section undefined="" data-markdown="" style="top: -168px; display: block;" class="future" hidden="" data-index-h="12"><h2>Contents</h2>
-<ol>
-<li>What are Macros?</li>
-<li>How do we generate code?</li>
-<li><strong>Example</strong></li>
-<li>Pros, Cons and Questions</li>
-</ol>
-</section><section undefined="" data-markdown="" style="top: -154px; display: block;" class="future" hidden="" data-index-h="13"><h1>One Example</h1>
-<h2>Working with bad APIs</h2>
-</section><section undefined="" data-markdown="" style="top: -211px; display: block;" class="future" hidden="" data-index-h="14"><h2>Send This.</h2>
-<pre><code class="perl">case class Person(
-  firstName: String,
-  familyName: String,
-  otherNames: Se<span class="string">q[String]</span>,
-  preferredName: String,
-  dateOfBirth: Date,
-  allergies: Se<span class="string">q[Allergy]</span>
-)
+`Seq(1, 2, 3)`
+</script></section><section undefined data-markdown><script type="text/template">
+## Reify
 
-=&gt; Person(<span class="string">"Laurence"</span>, <span class="string">"Rouesnel"</span>, ...)</code></pre>
-</section><section undefined="" data-markdown="" style="top: -340px; display: none;" class="future" hidden="" data-index-h="15"><h2>Welcome to SimpleService</h2>
-<pre><code class="python">type Id = Long
-type Result = Long
-type Path = String
-type SessionId = Long
+    val ast = context.reify {
+      import scalaz.Scalaz._
 
-<span class="function"><span class="keyword">def</span> <span class="title">createSession</span><span class="params">()</span> :</span> SessionId
+      generatedValidationResults.splice
+        .foldLeft(Valid : ValidationResult)(_ |+| _)
+    }
 
-<span class="function"><span class="keyword">def</span> <span class="title">createBusinessObject</span><span class="params">(sessionId: SessionId, 
-                         type: String, 
-                         path: Path = <span class="string">"/"</span>)</span> :</span> Id
+becomes
+    
+    // ast =>
+    Expr(Block(List(
+    Import(Ident(scalaz.Scalaz), List(ImportSelector(nme.WILDCARD, 1975, null, -1)))),
+    Apply(Apply(Select(Apply(
+    TypeApply(Select(Select(Ident(newTermName("collection")), newTermName("Seq")), newTermName("apply")), List(Ident(newTypeName("ValidationResult")))),
+    List(Apply(Select(Apply(TypeApply(Select(Ident(newTermName("Validatable")), newTermName("apply")), List(Ident(java.lang.String))), List()), newTermName("validate")), List(Select(Ident(newTermName("obj")), newTermName("name")))), Apply(Select(Apply(TypeApply(Select(Ident(newTermName("Validatable")), newTermName("apply")), List(Ident(java.lang.String))), List()), newTermName("validate")), List(Select(Ident(newTermName("obj")), newTermName("reaction")))))), newTermName("foldLeft")), 
+    List(Typed(Ident(Valid), Ident(ValidationResult)))), 
+    List(Function(List(ValDef(Modifiers(PARAM | SYNTHETIC), newTermName("x$3"), TypeTree(), EmptyTree), 
+    ValDef(Modifiers(PARAM | SYNTHETIC), newTermName("x$4"), TypeTree(), EmptyTree)), Apply(Select(Apply(Apply(Select(Ident(scalaz.Scalaz), newTermName("ToSemigroupOps")), List(Ident(newTermName("x$3")))), List(Select(Ident(ValidationResult), newTermName("monoid")))), newTermName("$bar$plus$bar")), List(Ident(newTermName("x$4")))))))))
+</script></section><section undefined data-markdown><script type="text/template">
+## Contents
 
-<span class="function"><span class="keyword">def</span> <span class="title">setBusinessObjectValue</span><span class="params">(sessionId: SessionId, 
-                           instance: Id, 
-                           name: String, 
-                           value: String)</span> :</span> Result
+1. What are Macros?
+2. How do we generate code?
+3. **Example**
+4. Pros, Cons and Questions
+</script></section><section undefined data-markdown><script type="text/template">
+# One Example
 
-<span class="function"><span class="keyword">def</span> <span class="title">getPath</span><span class="params">(sessionId: SessionId, instance: Id)</span> :</span> Path
+## Working with bad APIs 
+</script></section><section undefined data-markdown><script type="text/template">
+## Send This.
 
-<span class="function"><span class="keyword">def</span> <span class="title">destroySession</span><span class="params">(sessionId: SessionId)</span> :</span> Result</code></pre>
-</section><section undefined="" data-markdown="" style="top: -340px; display: none;" class="future" hidden="" data-index-h="16"><h2>Usage</h2>
-<pre><code class="perl">    val service = ...
+    case class Person(
+      firstName: String,
+      familyName: String,
+      otherNames: Seq[String],
+      preferredName: String,
+      dateOfBirth: Date,
+      allergies: Seq[Allergy]
+    )
+
+    => Person("Laurence", "Rouesnel", ...)
+</script></section><section undefined data-markdown><script type="text/template">
+## Welcome to SimpleService
+
+    type Id = Long
+    type Result = Long
+    type Path = String
+    type SessionId = Long
+
+    def createSession() : SessionId
+
+    def createBusinessObject(sessionId: SessionId, 
+                             type: String, 
+                             path: Path = "/") : Id
+
+    def setBusinessObjectValue(sessionId: SessionId, 
+                               instance: Id, 
+                               name: String, 
+                               value: String) : Result
+
+    def getPath(sessionId: SessionId, instance: Id) : Path
+
+    def destroySession(sessionId: SessionId) : Result
+</script></section><section undefined data-markdown><script type="text/template">
+## Usage
+    
+    val service = ...
     val session = ...
 
-    val name = Name(<span class="string">"Laurence"</span>, ...)
+    val name = Name("Laurence", ...)
 
     val obj = name.toSimpleObject(service, session)
 
-    session.<span class="keyword">send</span>(obj)</code></pre>
-</section><section undefined="" data-markdown="" style="top: -340px; display: none;" class="future" hidden="" data-index-h="17"><h2>Naive Implementation</h2>
-<pre><code class="perl">case class Name(
-  firstName: String,
-  familyName: String,
-  otherNames: Se<span class="string">q[String]</span>,
-  preferredName: String
-) {
-
-  def toSimpleObject(service: SimpleService, session: Id) : Path = {
-    val objectId = service.createBusinessObject(session, <span class="string">"name"</span>)
-
-    service.setBusinessObjectValue(session, objectId, 
-      <span class="string">"firstName"</span>, firstName)
-
-    service.setBusinessObjectValue(session, objectId, 
-      <span class="string">"familyName"</span>, familyName)
-
-    service.setBusinessObjectValue(session, objectId, 
-      <span class="string">"otherNames"</span>, otherNames.mkString(<span class="string">","</span>))
-
-    service.setBusinessObjectValue(session, objectId, 
-      <span class="string">"preferedName"</span>, preferredName)
-
-    /<span class="regexp">/ Object is now ready to send.
-    service.getPath(session, objectId)
-  }
-}</span></code></pre>
-</section><section undefined="" data-markdown="" style="top: -340px; display: none;" class="future" hidden="" data-index-h="18"><h2>Goals</h2>
-<ul>
-<li>Make it hard to do the wrong thing</li>
-<li>Make errors obvious (visible and quick to detect)</li>
-<li>Embrace DRY (don't repeat yourself) - reduce boilerplate</li>
-<li>Convention over Configuration</li>
-</ul>
-</section><section undefined="" data-markdown="" style="top: -340px; display: none;" class="future" hidden="" data-index-h="19"><h2>What about a nice service wrapper?</h2>
-<pre><code class="ruby">trait <span class="constant">SimpleService</span> {
-  <span class="function"><span class="keyword">def</span> <span class="title">createBusinessObject</span><span class="params">(<span class="symbol">fields:</span> (<span class="constant">String</span>, <span class="constant">SimpleFieldValue</span>)</span><span class="title">*</span>) </span><span class="symbol">:</span>
-    <span class="constant">Either</span>[<span class="constant">SimpleError</span>, <span class="constant">Path</span>]
-}
-
-sealed trait <span class="constant">SimpleFieldValue</span> {
-  <span class="function"><span class="keyword">def</span> <span class="title">toSimpleString</span><span class="params">()</span>: </span><span class="constant">String</span>
-}
-<span class="keyword">case</span> <span class="class"><span class="keyword">class</span> <span class="title">SimplePrimitive</span>[<span class="title">T</span>](<span class="title">value</span>: <span class="title">T</span>) <span class="title">extends</span> <span class="title">SimpleFieldValue</span> {</span>
-  <span class="function"><span class="keyword">def</span> <span class="title">toSimpleString</span><span class="params">()</span>: </span><span class="constant">String</span> = value.toString()
-}
-<span class="keyword">case</span> <span class="class"><span class="keyword">class</span> <span class="title">SimpleList</span>[<span class="title">T</span>](<span class="title">value</span>: <span class="title">Seq</span>[<span class="title">T</span>]) <span class="title">extends</span> <span class="title">SimpleFieldValue</span> {</span>
-  <span class="function"><span class="keyword">def</span> <span class="title">toSimpleString</span><span class="params">()</span>: </span><span class="constant">String</span> = value.mkString(<span class="string">"|"</span>)
-}
-
-object <span class="constant">SimpleFieldValue</span> {
-  implicit val string2SimpleString(<span class="symbol">value:</span> <span class="constant">String</span>) <span class="symbol">:</span> <span class="constant">SimpleFieldValue</span> 
-    = <span class="constant">SimpleFieldValue</span>(value)
-
-  implicit val int2SimpleInt(<span class="symbol">value:</span> <span class="constant">Int</span>) <span class="symbol">:</span> <span class="constant">SimpleFieldValue</span> 
-    = <span class="constant">SimpleFieldValue</span>(value)
-
-  implicit val stringSeq2SimpleStringList(<span class="symbol">value:</span> <span class="constant">Seq</span>[<span class="constant">String</span>]) <span class="symbol">:</span> <span class="constant">SimpleFieldValue</span> 
-    = <span class="constant">SimpleList</span>(value)
-}</code></pre>
-</section><section undefined="" data-markdown="" style="top: -340px; display: none;" class="future" hidden="" data-index-h="20"><h2>The Wrapper Approach</h2>
-<pre><code class="perl">case class Name(
-  firstName: String,
-  familyName: String,
-  otherNames: Se<span class="string">q[String]</span>,
-  preferredName: String
-) {
-
-  def toSimpleObject(service: SimplerSimpleService, session: Id) 
-      = SimplerSimpleService.createBusinessObject(
-        <span class="string">"otherNames"</span> -&gt; otherNames,
-        <span class="string">"familyName"</span> -&gt; firstName,
-        <span class="string">"firstName"</span> -&gt; familyName,
-        <span class="string">"preferredName"</span> -&gt; preferredName
-      )
-}</code></pre>
-<h3>Usage</h3>
-<pre><code class="perl">    val name = Name(...)
-    service.<span class="keyword">send</span>(
-        name.toSimpleObject(service, session)
-    )</code></pre>
-</section><section undefined="" data-markdown="" style="top: -340px; display: none;" class="future" hidden="" data-index-h="21"><h2>The Macro Approach</h2>
-<pre><code class="python">type SimpleObjectBuilder[T] = 
-  (T) =&gt; (SimpleService, SessionId, Path) =&gt; Either[SimpleError, Unit]
-
-object SimpleObjectBuilder {
-  <span class="function"><span class="keyword">def</span> <span class="title">apply</span>[<span class="title">T</span>] :</span> SimpleObjectBuilder = macro ...
-}
-
-case <span class="class"><span class="keyword">class</span> <span class="title">Name</span><span class="params">(
-  firstName: String,
-  familyName: String,
-  otherNames: Seq[String],
-  preferredName: String
-)</span></span></code></pre>
-<h3>Usage</h3>
-<pre><code class="perl">val name = Name(...)
-service.<span class="keyword">send</span>(
-    SimpleObjectBuilder[Name](name)
-)</code></pre>
-</section><section undefined="" data-markdown="" style="top: -340px; display: none;" class="future" hidden="" data-index-h="22"><h3>From This</h3>
-<pre><code class="python">case <span class="class"><span class="keyword">class</span> <span class="title">Name</span><span class="params">(
-  firstName: String,
-  familyName: String,
-  otherNames: Seq[String],
-  preferredName: String
-)</span></span></code></pre>
-<h3>Generate a SimpleObjectBuilder:</h3>
-<pre><code class="php">(obj: Name) =&gt; (SimpleService, SessionId, Path) =&gt; {
-    val objectId = service.createBusinessObject(session, <span class="string">"name"</span>)
-
-    service.setBusinessObjectValue(session, objectId, 
-      <span class="string">"firstName"</span>, obj.firstName)
-
-    service.setBusinessObjectValue(session, objectId, 
-      <span class="string">"familyName"</span>, obj.familyName)
-
-    service.setBusinessObjectValue(session, objectId, 
-      <span class="string">"otherNames"</span>, obj.otherNames.mkString(<span class="string">"|"</span>))
-
-    service.setBusinessObjectValue(session, objectId, 
-      <span class="string">"preferredName"</span>, obj.preferredName)
-
-    <span class="comment">// Object is now ready to send.</span>
-    service.getPath(session, objectId)
-  }
-  }</code></pre>
-</section><section undefined="" data-markdown="" style="top: -340px; display: none;" class="future" hidden="" data-index-h="23"><h1>First Steps</h1>
-<pre><code class="python">object SimpleObjectBuilder {
-  <span class="function"><span class="keyword">def</span> <span class="title">apply</span>[<span class="title">T</span>] :</span> SimpleObjectBuilder[T] 
-    = macro Macros.generateObjectBuilder[T]
-}
-
-object Macros {
-  <span class="function"><span class="keyword">def</span> <span class="title">generateObjectBuilder</span>[<span class="title">T</span>:</span> c.WeakTypeTag](c: Context)
-    : c.Expr[SimpleObjectBuilder[T]] = {
-
-    <span class="keyword">import</span> c.universe._
-
-    ...
-
-    null
-  }
-}</code></pre>
-</section><section undefined="" data-markdown="" style="top: -340px; display: none;" class="future" hidden="" data-index-h="24"><h2>Getting a reference to the type.</h2>
-<pre><code class="perl">case class Name(
-  firstName: String,
-  familyName: String,
-  otherNames: Se<span class="string">q[String]</span>,
-  preferredName: String
-)
-
-SimpleObjectBuilder[Name]</code></pre>
-<h3>Macro</h3>
-<pre><code class="java"><span class="keyword">import</span> c.universe._
-
-<span class="comment">// Get a reference to the given type (i.e. Name).</span>
-val typeConstructor = weakTypeOf[T]
-
-val parameters = typeConstructor.declarations
-  .filter(_.isTerm)
-  .map(_.asTerm)
-  .filter(term =&gt; term.isVal || term.isVar)</code></pre>
-</section><section undefined="" data-markdown="" style="top: -340px; display: none;" class="future" hidden="" data-index-h="25"><h2>Slow down you're going too fast.</h2>
-<pre><code class="perl">class SimpleServiceSpec extends Specification { def is = s2<span class="string">""</span><span class="string">"
-  SimpleService is badly written            <span class="subst">${ok}</span>
-
-  Debug Function                            <span class="subst">${debugFunction}</span>
-  "</span><span class="string">""</span>
-
-    def debugFunction = {
-
-      val builder = SimpleObjectBuilder[Name]
-
-      ok
-    }
-
-  }</code></pre>
-</section><section undefined="" data-markdown="" style="top: -340px; display: none;" class="future" hidden="" data-index-h="26"><h2>Add a few <code>println</code>'s</h2>
-<pre><code class="ruby">println(weakTypeOf[<span class="constant">T</span>].declarations)
-
-=&gt; <span class="constant">Scope</span>{
-  val <span class="symbol">firstName:</span> <span class="constant">String</span>;
-  private[this] val <span class="symbol">firstName:</span> <span class="constant">String</span>;
-  val <span class="symbol">familyName:</span> <span class="constant">String</span>;
-  private[this] val <span class="symbol">familyName:</span> <span class="constant">String</span>;
-  val <span class="symbol">otherNames:</span> <span class="constant">Seq</span>[<span class="constant">String</span>];
-  private[this] val <span class="symbol">otherNames:</span> <span class="constant">Seq</span>[<span class="constant">String</span>];
-  val <span class="symbol">preferredName:</span> <span class="constant">String</span>;
-  private[this] val <span class="symbol">preferredName:</span> <span class="constant">String</span>;
-  <span class="function"><span class="keyword">def</span> <span class="title">&lt;</span><span class="title">init</span><span class="title">&gt;</span><span class="params">(<span class="symbol">firstName:</span> <span class="constant">String</span>,<span class="symbol">familyName:</span> <span class="constant">String</span>,<span class="symbol">otherNames:</span> <span class="constant">Seq</span>[<span class="constant">String</span>],<span class="symbol">preferredName:</span> <span class="constant">String</span>)</span>: </span><span class="constant">Name</span>;
-  <span class="function"><span class="keyword">def</span> <span class="title">copy</span><span class="params">(<span class="symbol">firstName:</span> <span class="constant">String</span>,<span class="symbol">familyName:</span> <span class="constant">String</span>,<span class="symbol">otherNames:</span> <span class="constant">Seq</span>[<span class="constant">String</span>],<span class="symbol">preferredName:</span> <span class="constant">String</span>)</span>: </span><span class="constant">Name</span>;
-  <span class="function"><span class="keyword">def</span> <span class="title">copy</span>$<span class="title">default</span>$1: </span><span class="constant">String</span> <span class="variable">@scala</span>.annotation.unchecked.uncheckedVariance;
-  <span class="function"><span class="keyword">def</span> <span class="title">copy</span>$<span class="title">default</span>$2: </span><span class="constant">String</span> <span class="variable">@scala</span>.annotation.unchecked.uncheckedVariance;
-  <span class="function"><span class="keyword">def</span> <span class="title">copy</span>$<span class="title">default</span>$3: </span><span class="constant">Seq</span>[<span class="constant">String</span>] <span class="variable">@scala</span>.annotation.unchecked.uncheckedVariance;
-  <span class="function"><span class="keyword">def</span> <span class="title">copy</span>$<span class="title">default</span>$4: </span><span class="constant">String</span> <span class="variable">@scala</span>.annotation.unchecked.uncheckedVariance;
-  override <span class="function"><span class="keyword">def</span> <span class="title">productPrefix</span>: </span><span class="constant">String</span>;
-  <span class="function"><span class="keyword">def</span> <span class="title">productArity</span>: </span><span class="constant">Int</span>;
-  <span class="function"><span class="keyword">def</span> <span class="title">productElement</span><span class="params">(x<span class="variable">$1</span><span class="symbol">:</span> <span class="constant">Int</span>)</span>: </span><span class="constant">Any</span>;
-  override <span class="function"><span class="keyword">def</span> <span class="title">productIterator</span>: </span><span class="constant">Iterator</span>[<span class="constant">Any</span>];
-  <span class="function"><span class="keyword">def</span> <span class="title">canEqual</span><span class="params">(x<span class="variable">$1</span><span class="symbol">:</span> <span class="constant">Any</span>)</span>: </span><span class="constant">Boolean</span>;
-  override <span class="function"><span class="keyword">def</span> <span class="title">hashCode</span><span class="params">()</span>: </span><span class="constant">Int</span>;
-  override <span class="function"><span class="keyword">def</span> <span class="title">toString</span><span class="params">()</span>: </span><span class="constant">String</span>;
-  override <span class="function"><span class="keyword">def</span> <span class="title">equals</span><span class="params">(x<span class="variable">$1</span><span class="symbol">:</span> <span class="constant">Any</span>)</span>: </span><span class="constant">Boolean</span>
-}</code></pre>
-</section><section undefined="" data-markdown="" style="top: -340px; display: none;" class="future" hidden="" data-index-h="27"><pre><code class="undefined">service.setBusinessObjectValue(session, objectId, 
-  "firstName", obj.firstName)
-
-service.setBusinessObjectValue(session, objectId, 
-  "familyName", obj.familyName)
-
-service.setBusinessObjectValue(session, objectId, 
-  "otherNames", obj.otherNames.mkString("|"))
-
-service.setBusinessObjectValue(session, objectId, 
-  "preferredName", obj.preferredName)</code></pre>
-</section><section undefined="" data-markdown="" style="top: -340px; display: none;" class="future" hidden="" data-index-h="28"><h2>Filtering out everything else</h2>
-<pre><code class="cs"><span class="comment">// Get the parameter symbols of the constructor.</span>
-val parameters = typeConstructor.declarations
-  .filter(_.isTerm)
-  .map(_.asTerm)
-  .filter(term =&gt; term.isVal || term.isVar)
-
-println(parameters)
-
-=&gt; List(
-    <span class="keyword">value</span> firstName, 
-    <span class="keyword">value</span> familyName, 
-    <span class="keyword">value</span> otherNames, 
-    <span class="keyword">value</span> preferredName
-  )</code></pre>
-</section><section undefined="" data-markdown="" style="top: -340.5px; display: none;" class="future" hidden="" data-index-h="29"><h2>Getting the field names</h2>
-<pre><code class="perl">def toDebugString(obj: AnyRef) = <span class="keyword">s</span><span class="string">"'<span class="subst">${obj}</span>': <span class="subst">${obj.getClass}</span>"</span>
-
-println(parameters.<span class="keyword">map</span>(<span class="number">_</span>.name).<span class="keyword">map</span>(toDebugString))
-
-
-=&gt; List(
-    <span class="string">'firstName '</span>: class scala.reflect.internal.Names<span class="variable">$TermName_R</span>, 
-    <span class="string">'familyName '</span>: class scala.reflect.internal.Names<span class="variable">$TermName_R</span>, 
-    <span class="string">'otherNames '</span>: class scala.reflect.internal.Names<span class="variable">$TermName_R</span>, 
-    <span class="string">'preferredName '</span>: class scala.reflect.internal.Names<span class="variable">$TermName_R</span>
-)</code></pre>
-</section><section undefined="" data-markdown="" style="top: -340.5px; display: none;" class="future" hidden="" data-index-h="30"><h2>Reification</h2>
-<pre><code class="php">val createObject = reify {
-  (instance: T) =&gt;
-  (service: SimpleService, sessionId: SessionId, path: Path) =&gt; {
-    val instanceId = service.createBusinessObject(sessionId, <span class="string">"objtype"</span>, path)
-
-    service.setBusinessObjectValue(sessionId, instanceId,
-      <span class="string">"name"</span>, <span class="string">"value"</span>)
-
-    service.getPath(sessionId, instanceId)
-  }
-}</code></pre>
-</section><section undefined="" data-markdown="" style="top: -340px; display: none;" class="future" hidden="" data-index-h="31"><h2>println to the rescue</h2>
-<pre><code class="php">  println(createObject)
-
-  =&gt; Expr[Name =&gt; ((simpleservice.SimpleService, simpleservice.SimpleService.SessionId, simpleservice.SimpleService.Path) =&gt; simpleservice.SimpleService.Path)]
-    (((instance: Name) =&gt; 
-    ((service: SimpleService, sessionId: SimpleService.SessionId, path: SimpleService.Path) =&gt; {
-
-    val instanceId = service.createBusinessObject(sessionId, path, service.createBusinessObject<span class="variable">$default</span>$<span class="number">3</span>);
-
-    service.setBusinessObjectValue(sessionId, instanceId, <span class="string">"name"</span>, <span class="string">"value"</span>);
-
-    service.getPath(sessionId, instanceId)
-  })))</code></pre>
-</section><section undefined="" data-markdown="" style="top: -340px; display: none;" class="future" hidden="" data-index-h="32"><h2>With a few tweaks.</h2>
-<pre><code class="php">  println(c.universe.showRaw(createObject))
-
-  =&gt; Expr(Function(<span class="keyword">List</span>(ValDef(Modifiers(PARAM), 
-  newTermName(<span class="string">"instance"</span>), TypeTree(), EmptyTree)), 
-  Function(<span class="keyword">List</span>(ValDef(Modifiers(PARAM), newTermName(<span class="string">"service"</span>), 
-  Ident(simpleservice.SimpleService), EmptyTree), ValDef(Modifiers(PARAM), 
-  newTermName(<span class="string">"sessionId"</span>), Select(Ident(simpleservice.SimpleService), newTypeName(<span class="string">"SessionId"</span>)), 
-  EmptyTree), ValDef(Modifiers(PARAM), newTermName(<span class="string">"path"</span>), 
-  Select(Ident(simpleservice.SimpleService), newTypeName(<span class="string">"Path"</span>)), 
-  EmptyTree)), Block(<span class="keyword">List</span>(ValDef(Modifiers(), newTermName(<span class="string">"instanceId"</span>), TypeTree(), 
-  Apply(Select(Ident(newTermName(<span class="string">"service"</span>)), newTermName(<span class="string">"createBusinessObject"</span>)), 
-  <span class="keyword">List</span>(Ident(newTermName(<span class="string">"sessionId"</span>)), Literal(Constant(<span class="string">"objType"</span>)), 
-  Ident(newTermName(<span class="string">"path"</span>))))), Apply(Select(Ident(newTermName(<span class="string">"service"</span>)), 
-  newTermName(<span class="string">"setBusinessObjectValue"</span>)), <span class="keyword">List</span>(Ident(newTermName(<span class="string">"sessionId"</span>)), 
-  Ident(newTermName(<span class="string">"instanceId"</span>)), 
-  Literal(Constant(<span class="string">"name"</span>)), Literal(Constant(<span class="string">"value"</span>))))), 
-  Apply(Select(Ident(newTermName(<span class="string">"service"</span>)), newTermName(<span class="string">"getPath"</span>)), 
-  <span class="keyword">List</span>(Ident(newTermName(<span class="string">"sessionId"</span>)), Ident(newTermName(<span class="string">"instanceId"</span>))))))))</code></pre>
-</section><section undefined="" data-markdown="" style="top: -340px; display: none;" class="future" hidden="" data-index-h="33"><h2>More experimenting.</h2>
-<pre><code class="sql">case class Test(a: Int, b: String)
-
-val test = reify {
-  val instance : Test = Test(1, "b")
-  instance.a
-}
-
-println(c.universe.showRaw(test))
-
-=&gt; Expr(B<span class="operator"><span class="keyword">lock</span>(List(
-  ValDef(Modifiers(), newTermName(<span class="string">"instance"</span>), TypeTree(), 
-    Apply(
-      <span class="keyword">Select</span>(Ident(newTermName(<span class="string">"Test"</span>)), newTermName(<span class="string">"apply"</span>)), 
-      List(Literal(Constant(<span class="number">1</span>)), Literal(Constant(<span class="string">"b"</span>)))))
-    ), 
-
-  <span class="keyword">Select</span>(Ident(newTermName(<span class="string">"instance"</span>)), newTermName(<span class="string">"a"</span>)))
-)</span></code></pre>
-</section><section undefined="" data-markdown="" style="top: -340px; display: none;" class="future" hidden="" data-index-h="34"><h2>Adding in SimpleService</h2>
-<pre><code class="cs"><span class="keyword">case</span> <span class="keyword">class</span> Test(a: Int, b: String)
-
-val test = reify {
-  val instance : Test = <span class="keyword">null</span>
-  val service : SimpleService = <span class="keyword">null</span>
-  service.setBusinessObjectValue(<span class="number">0</span>, <span class="number">0</span>, <span class="string">"b"</span>, instance.b)
-}
-
-println(c.universe.showRaw(test))</code></pre>
-</section><section undefined="" data-markdown="" style="top: -340px; display: none;" class="future" hidden="" data-index-h="35"><h2>Now its making sense.</h2>
-<pre><code class="sql">Expr(B<span class="operator"><span class="keyword">lock</span>(List(
-
-  // val instance : Test = <span class="keyword">null</span>
-  ValDef(Modifiers(), newTermName(<span class="string">"instance"</span>), TypeTree(), Literal(Constant(<span class="keyword">null</span>))), 
-
-  // val service : SimpleService = <span class="keyword">null</span>
-  ValDef(Modifiers(), newTermName(<span class="string">"service"</span>), Ident(simpleservice.SimpleService), Literal(Constant(<span class="keyword">null</span>)))), 
-
-
-  // service.setBusinessObjectValue(<span class="number">0</span>, <span class="number">0</span>, <span class="string">"b"</span>, instance.b)
-  Apply(
-    <span class="keyword">Select</span>(Ident(newTermName(<span class="string">"service"</span>)), newTermName(<span class="string">"setBusinessObjectValue"</span>)), 
-
-    List(
-      Literal(Constant(<span class="number">0</span>)), 
-      Literal(Constant(<span class="number">0</span>)), 
-      Literal(Constant(<span class="string">"b"</span>)), 
-      <span class="keyword">Select</span>(Ident(newTermName(<span class="string">"instance"</span>)), newTermName(<span class="string">"b"</span>))
-    )
-  )
-))</span></code></pre>
-</section><section undefined="" data-markdown="" style="top: -340px; display: none;" class="future" hidden="" data-index-h="36"><pre><code class="undefined">service.setBusinessObjectValue(sessionId, instanceId, 
-  "firstName", instance.firstName)
-
-service.setBusinessObjectValue(session, instanceId, 
-  "familyName", instance.familyName)
-
-service.setBusinessObjectValue(session, instanceId, 
-  "otherNames", instance.otherNames.mkString("|"))
-
-service.setBusinessObjectValue(session, instanceId, 
-  "preferredName", instance.preferredName)</code></pre>
-</section><section undefined="" data-markdown="" style="top: -340px; display: none;" class="future" hidden="" data-index-h="37"><h2>A bit of copy-pasting.</h2>
-<pre><code class="sql">val appliedParameters = parameters.map(p =&gt; {
-  Apply(
-    <span class="operator"><span class="keyword">Select</span>(Ident(newTermName(<span class="string">"service"</span>)), newTermName(<span class="string">"setBusinessObjectValue"</span>)),
-    List(
-      Ident(newTermName(<span class="string">"sessionId"</span>)),
-      Ident(newTermName(<span class="string">"instanceId"</span>)),
-      Ident(p.name.toTermName),
-      <span class="keyword">Select</span>(
-        Ident(newTermName(<span class="string">"instance"</span>)),
-        p
-      ) : Tree
-    )
-  )
-})</span></code></pre>
-</section><section undefined="" data-markdown="" style="top: -340px; display: none;" class="future" hidden="" data-index-h="38"><h2>Check with println</h2>
-<pre><code class="php">println(appliedParameters)
-
-=&gt; <span class="keyword">List</span>(
-    service.setBusinessObjectValue(sessionId, instanceId,
-      firstName , instance.firstName), 
-
-    service.setBusinessObjectValue(sessionId, instanceId,
-      familyName , instance.familyName),
-
-    service.setBusinessObjectValue(sessionId, instanceId,
-      otherNames , instance.otherNames),
-
-    service.setBusinessObjectValue(sessionId, instanceId,
-      preferredName , instance.preferredName)
-)</code></pre>
-</section><section undefined="" data-markdown="" style="top: -340px; display: none;" class="future" hidden="" data-index-h="39"><h2>But we wanted Strings</h2>
-<pre><code class="sql">val appliedParameters = parameters.map(p =&gt; {
-  Apply(
-    <span class="operator"><span class="keyword">Select</span>(Ident(newTermName(<span class="string">"service"</span>)), newTermName(<span class="string">"setBusinessObjectValue"</span>)),
-    List(
-      Ident(newTermName(<span class="string">"sessionId"</span>)),
-      Ident(newTermName(<span class="string">"instanceId"</span>)),
-      Literal(Constant(p.name.toTermName.toString.trim)) : Tree,
-      <span class="keyword">Select</span>(
-        Ident(newTermName(<span class="string">"instance"</span>)),
-        p
-      ) : Tree
-    )
-  )
-})</span></code></pre>
-</section><section undefined="" data-markdown="" style="top: -340px; display: none;" class="future" hidden="" data-index-h="40"><h2>Checking again.</h2>
-<pre><code class="php">println(appliedParameters)
-
-=&gt; <span class="keyword">List</span>(
-    service.setBusinessObjectValue(sessionId, instanceId,
-      <span class="string">"firstName"</span>, instance.firstName), 
-
-    service.setBusinessObjectValue(sessionId, instanceId, 
-      <span class="string">"familyName"</span>, instance.familyName), 
-
-    service.setBusinessObjectValue(sessionId, instanceId, 
-      <span class="string">"otherNames"</span>, instance.otherNames), 
-
-    service.setBusinessObjectValue(sessionId, instanceId, 
-      <span class="string">"preferredName"</span>, instance.preferredName)
-  )</code></pre>
-</section><section undefined="" data-markdown="" style="top: -340px; display: none;" class="future" hidden="" data-index-h="41"><h2>An updated CreateObject</h2>
-<pre><code class="php">val createObject = reify {
-  (instance: T) =&gt;
-  (service: SimpleService, sessionId: SessionId, path: Path) =&gt; {
-    val instanceId = service.createBusinessObject(sessionId, <span class="string">"objType"</span>, path)
-
-    c.Expr[Unit](
-      Block(appliedParameters.toSeq: _*)
-    ).splice
-
-    service.getPath(sessionId, instanceId)
-  }
-}</code></pre>
-</section><section undefined="" data-markdown="" style="top: -340px; display: none;" class="future" hidden="" data-index-h="42"><h2>Checking with PrintLn</h2>
-<pre><code class="php">Expr[Name =&gt; ((simpleservice.SimpleService, simpleservice.SimpleService.SessionId, simpleservice.SimpleService.Path) =&gt; simpleservice.SimpleService.Path)](((instance: Name) =&gt; ((service: SimpleService, sessionId: SimpleService.SessionId, path: SimpleService.Path) =&gt; {
-  val instanceId = service.createBusinessObject(sessionId, <span class="string">"objType"</span>, path);
-  {
-    service.setBusinessObjectValue(sessionId, instanceId, 
-      <span class="string">"firstName"</span>, instance.firstName);
-
-    service.setBusinessObjectValue(sessionId, instanceId, 
-      <span class="string">"familyName"</span>, instance.familyName);
-
-    service.setBusinessObjectValue(sessionId, instanceId, 
-      <span class="string">"otherNames"</span>, instance.otherNames);
-
-    service.setBusinessObjectValue(sessionId, instanceId, 
-      <span class="string">"preferredName"</span>, instance.preferredName)
-  };
-  service.getPath(sessionId, instanceId)
-})))</code></pre>
-</section><section undefined="" data-markdown="" style="top: -340px; display: none;" class="future" hidden="" data-index-h="43"><h2>Oh no</h2>
-<pre><code class="cs">[error] /Users/laurencer/src/scala-syd-talk/examples/src/test/scala/SimpleServiceSpec.scala:<span class="number">18</span>: 
-  <span class="keyword">value</span> firstName  <span class="keyword">is</span> not a member of Name
-
-[error]     val builder = SimpleObjectBuilder[Name]</code></pre>
-<p>A fix (notice the double space after firstName):</p>
-<pre><code class="sql"><span class="operator"><span class="keyword">Select</span>(
-  Ident(newTermName(<span class="string">"instance"</span>)),
-  newTermName(p.name.toTermName.toString.trim)
-) : Tree</span></code></pre>
-<p>What Changed?</p>
-<pre><code class="perl">p -&gt; newTermName(p.name.toTermName.toString.trim)</code></pre>
-</section><section undefined="" data-markdown="" style="top: -340px; display: none;" class="future" hidden="" data-index-h="44"><h2>We forgot something.</h2>
-<pre><code class="python">[error] /Users/laurencer/src/scala-syd-talk/examples/src/test/scala/SimpleServiceSpec.scala:<span class="number">18</span>: type mismatch;
-
-[error]  found   : Seq[String]
-[error]  required: String
-
-[error]     val builder = SimpleObjectBuilder[Name]
-
-// Unchangeable API.
-<span class="function"><span class="keyword">def</span> <span class="title">setBusinessObjectValue</span><span class="params">(sessionId: SessionId, 
-   instance: Id, 
-   name: String, 
-   value: String // Wants a String 
- )</span> :</span> Result
-
-case <span class="class"><span class="keyword">class</span> <span class="title">Name</span><span class="params">(
-  firstName: String,
-  familyName: String,
-  otherNames: Seq[String], // Not a String :<span class="params">(
-  preferredName: String
-)</span></span></span></code></pre>
-</section><section undefined="" data-markdown="" style="top: -340px; display: none;" class="future" hidden="" data-index-h="45"><h2>To Fix This We Need Better Type Handling</h2>
-<ul>
-<li>Different behaviours for different types.</li>
-<li>Nicer errors if we give it a type it cannot handle.</li>
-<li>Customise the behaviour through annotations.</li>
-</ul>
-</section><section undefined="" data-markdown="" style="top: -340px; display: none;" class="future" hidden="" data-index-h="46"><h2>We need some annotations.</h2>
-<p>These will change how our code gets generated.</p>
-<pre><code class="ruby"><span class="keyword">case</span> <span class="class"><span class="keyword">class</span> <span class="title">ObjectType</span>(<span class="title">objType</span>: <span class="title">String</span>) </span>
-  extends scala.annotation.<span class="constant">StaticAnnotation</span>
-
-<span class="keyword">case</span> <span class="class"><span class="keyword">class</span> <span class="title">Ignore</span></span>
-  extends scala.annotation.<span class="constant">StaticAnnotation</span>
-
-<span class="keyword">case</span> <span class="class"><span class="keyword">class</span> <span class="title">ObjectPath</span>(<span class="title">path</span>: <span class="title">String</span>)</span>
-  extends scala.annotation.<span class="constant">StaticAnnotation</span></code></pre>
-</section><section undefined="" data-markdown="" style="top: -340px; display: none;" class="future" hidden="" data-index-h="47"><h2>Now with Annotations</h2>
-<pre><code class="ruby"><span class="variable">@ObjectType</span>(<span class="string">"nickname"</span>)
-<span class="keyword">case</span> <span class="class"><span class="keyword">class</span> <span class="title">Nickname</span>(</span>
-  <span class="symbol">name:</span> <span class="constant">String</span>
-)
-
-<span class="variable">@ObjectType</span>(<span class="string">"name"</span>)
-<span class="keyword">case</span> <span class="class"><span class="keyword">class</span> <span class="title">Name</span>(</span>
-  <span class="symbol">firstName:</span> <span class="constant">String</span>,
-  <span class="symbol">familyName:</span> <span class="constant">String</span>,
-  <span class="symbol">otherNames:</span> <span class="constant">Seq</span>[<span class="constant">String</span>],
-  <span class="symbol">preferredName:</span> <span class="constant">String</span>,
-  <span class="variable">@Ignore</span> <span class="symbol">twitterHandle:</span> <span class="constant">String</span>,
-  <span class="variable">@ObjectPath</span>(<span class="string">"/nicknames"</span>) <span class="symbol">nickname:</span> <span class="constant">Nickname</span>
-)</code></pre>
-</section><section undefined="" data-markdown="" style="top: -340px; display: none;" class="future" hidden="" data-index-h="48"><h2>Rewriting to use the Constructor</h2>
-<p>NB. Annotations are on the constructor arguments - not the fields.</p>
-<pre><code class="php"><span class="comment">// Usage: SimpleObjectBuilder[Name]</span>
-
-<span class="comment">// Get a reference to the constructor of the type.</span>
-val typeConstructor = weakTypeOf[T]
-
-val constructor = typeConstructor.declarations.collect({
-  <span class="keyword">case</span> MethodSymbolTag(method) <span class="keyword">if</span> method.isPrimaryConstructor =&gt; method
-}).head
-
-<span class="comment">// Get the parameter symbols of the constructor.</span>
-<span class="comment">// Filter out any with the @Ignore annotation.</span>
-val parameters = constructor.paramss.head.filter(p =&gt;
-  p.annotations.find(_.tpe =:= typeOf[Ignore]).isEmpty
-)</code></pre>
-</section><section undefined="" data-markdown="" style="top: -340px; display: none;" class="future" hidden="" data-index-h="49"><h2>Type-based behaviour</h2>
-<pre><code class="javascript"><span class="comment">// List of types we can directly serialise</span>
-val acceptableTypes = List(
-  typeOf[Int],
-  typeOf[String],
-  typeOf[Long]
-)
-
-def isAcceptableType(pType: Type) = 
-  acceptableTypes.foldRight(<span class="literal">false</span>)((typ, memo) =&gt; memo || pType &lt;:<span class="xml"><span class="tag">&lt; <span class="attribute">typ</span>)
-
-<span class="attribute">val</span> <span class="attribute">appliedParameters</span> = <span class="attribute">parameters.map</span>(<span class="attribute">p</span> =&gt;</span> {
-
-  if (p.typeSignature <span class="tag">&lt;<span class="title">:&lt;</span> <span class="attribute">typeOf</span>[<span class="attribute">Seq</span>[<span class="attribute">_</span>]]) {
-    <span class="attribute">generateSequenceSetter</span>(<span class="attribute">p</span>)
-  } <span class="attribute">else</span> <span class="attribute">if</span> (<span class="attribute">isAcceptableType</span>(<span class="attribute">p.typeSignature</span>)) {
-    <span class="attribute">generateValueSetter</span>(<span class="attribute">p</span>)
-  } <span class="attribute">else</span> {
-    <span class="attribute">val</span> <span class="attribute">pathAnnotation</span> = <span class="attribute">p.annotations.find</span>(<span class="attribute">_.tpe</span> =<span class="value">:=</span> <span class="attribute">typeOf</span>[<span class="attribute">ObjectPath</span>])
-    <span class="attribute">pathAnnotation</span> <span class="attribute">match</span> {
-      <span class="attribute">case</span> <span class="attribute">Some</span>(<span class="attribute">pathAnnotation</span>) =&gt;</span>
-        generateObjectSetter(p, pathAnnotation.scalaArgs.head)
-      case None =&gt; {
-        c.abort(c.enclosingPosition, s"Complex object in field `${p.name}` on type `${typeConstructor}` does not have @ObjectPath annotation. Use @Ignore if you don't want it serialized.")
+    session.send(obj)
+</script></section><section undefined data-markdown><script type="text/template">
+## Naive Implementation
+    
+    case class Name(
+      firstName: String,
+      familyName: String,
+      otherNames: Seq[String],
+      preferredName: String
+    ) {
+
+      def toSimpleObject(service: SimpleService, session: Id) : Path = {
+        val objectId = service.createBusinessObject(session, "name")
+
+        service.setBusinessObjectValue(session, objectId, 
+          "firstName", firstName)
+
+        service.setBusinessObjectValue(session, objectId, 
+          "familyName", familyName)
+
+        service.setBusinessObjectValue(session, objectId, 
+          "otherNames", otherNames.mkString(","))
+
+        service.setBusinessObjectValue(session, objectId, 
+          "preferedName", preferredName)
+
+        // Object is now ready to send.
+        service.getPath(session, objectId)
       }
     }
-  }
-})</span></code></pre>
-</section><section undefined="" data-markdown="" style="top: -340px; display: none;" class="future" hidden="" data-index-h="50"><h2>Win.</h2>
-<pre><code class="php">Expr[Name =&gt; ((simpleservice.SimpleService, simpleservice.SimpleService.SessionId, simpleservice.SimpleService.Path) =&gt; simpleservice.SimpleService.Path)](((instance: Name) =&gt; ((service: SimpleService, sessionId: SimpleService.SessionId, path: SimpleService.Path) =&gt; {
-  val instanceId = service.createBusinessObject(sessionId, <span class="string">"objType"</span>, path);
-  {
-    service.setBusinessObjectValue(sessionId, instanceId, 
-      <span class="string">"firstName"</span>, instance.firstName);
+</script></section><section undefined data-markdown><script type="text/template">
+## Goals
 
-    service.setBusinessObjectValue(sessionId, instanceId, 
-      <span class="string">"familyName"</span>, instance.familyName);
+- Make it hard to do the wrong thing
+- Make errors obvious (visible and quick to detect)
+- Embrace DRY (don't repeat yourself) - reduce boilerplate
+- Convention over Configuration
+</script></section><section undefined data-markdown><script type="text/template">
+## What about a nice service wrapper?
+    trait SimpleService {
+      def createBusinessObject(fields: (String, SimpleFieldValue)*) :
+        Either[SimpleError, Path]
+    }
 
-    service.setBusinessObjectValue(sessionId, instanceId, 
-      <span class="string">"otherNames"</span>, instance.otherNames.mkString(<span class="string">"|"</span>));
+    sealed trait SimpleFieldValue {
+      def toSimpleString(): String
+    }
+    case class SimplePrimitive[T](value: T) extends SimpleFieldValue {
+      def toSimpleString(): String = value.toString()
+    }
+    case class SimpleList[T](value: Seq[T]) extends SimpleFieldValue {
+      def toSimpleString(): String = value.mkString("|")
+    }
 
-    service.setBusinessObjectValue(sessionId, instanceId, 
-      <span class="string">"preferredName"</span>, instance.preferredName);
+    object SimpleFieldValue {
+      implicit val string2SimpleString(value: String) : SimpleFieldValue 
+        = SimpleFieldValue(value)
 
-    SimpleObjectBuilder.apply[Nickname](instance.nickname)(service, sessionId, <span class="string">"/nickname"</span>)
-  };
-  service.getPath(sessionId, instanceId)
-})))</code></pre>
-</section><section undefined="" data-markdown="" style="top: -340px; display: none;" class="future" hidden="" data-index-h="51"><h2>Advantages over Reflection</h2>
-<ul>
-<li>Reflection is really slow.</li>
-<li>Reflection is brittle - it breaks at run time and not at compile time.</li>
-<li>Java Reflection doesn't work well with Scala types.</li>
-</ul>
-</section><section undefined="" data-markdown="" style="top: -340px; display: none;" class="future" hidden="" data-index-h="52"><h2>Advantages over Hand-Written Code</h2>
-<ul>
-<li>Compile time errors if you screw up.</li>
-<li>No duplication of code/field names.</li>
-</ul>
-</section><section undefined="" data-markdown="" style="top: -340px; display: none;" class="future" hidden="" data-index-h="53"><h1>Why not macros?</h1>
-</section><section undefined="" data-markdown="" style="top: -340.5px; display: none;" class="future" hidden="" data-index-h="54"><h2>Magic.</h2>
-<ul>
-<li>Hard to read and debug.</li>
-<li>Painful for end-users when they don't work.</li>
-<li>Time-consuming to write.</li>
-</ul>
-</section><section undefined="" data-markdown="" class="future" style="top: -340px; display: none;" hidden="" data-index-h="55"><h1>Thank you!</h1>
-<h2>Questions?</h2>
-</section></div>
-        <script src="highlight.min.js"></script><div class="backgrounds"><div class="slide-background past"></div><div class="slide-background past"></div><div class="slide-background past"></div><div class="slide-background past"></div><div class="slide-background past"></div><div class="slide-background past"></div><div class="slide-background past"></div><div class="slide-background past"></div><div class="slide-background past"></div><div class="slide-background past"></div><div class="slide-background past"></div><div class="slide-background present"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div></div><div class="progress" style="display: block;"><span style="width: 161.8px;"></span></div><aside class="controls" style="display: block;"><div class="navigate-left enabled"></div><div class="navigate-right enabled"></div><div class="navigate-up"></div><div class="navigate-down"></div></aside><div class="state-background"></div><div class="pause-overlay"></div></div>
-        <script src="head.min.js"></script>
-        <script src="reveal.js"></script>
+      implicit val int2SimpleInt(value: Int) : SimpleFieldValue 
+        = SimpleFieldValue(value)
+
+      implicit val stringSeq2SimpleStringList(value: Seq[String]) : SimpleFieldValue 
+        = SimpleList(value)
+    }
+</script></section><section undefined data-markdown><script type="text/template">
+## The Wrapper Approach
+
+    case class Name(
+      firstName: String,
+      familyName: String,
+      otherNames: Seq[String],
+      preferredName: String
+    ) {
+
+      def toSimpleObject(service: SimplerSimpleService, session: Id) 
+        = SimplerSimpleService.createBusinessObject(
+          "otherNames" -> otherNames,
+          "familyName" -> firstName,
+          "firstName" -> familyName,
+          "preferredName" -> preferredName
+        )
+    }
+
+### Usage
+    val name = Name(...)
+    service.send(
+      name.toSimpleObject(service, session)
+    )
+</script></section><section undefined data-markdown><script type="text/template">
+## The Macro Approach
+
+    type SimpleObjectBuilder[T] = 
+      (T) => (SimpleService, SessionId, Path) => Either[SimpleError, Unit]
+
+    object SimpleObjectBuilder {
+      def apply[T] : SimpleObjectBuilder = macro ...
+    }
+
+    case class Name(
+      firstName: String,
+      familyName: String,
+      otherNames: Seq[String],
+      preferredName: String
+    )
+
+### Usage 
+
+    val name = Name(...)
+    service.send(
+      SimpleObjectBuilder[Name](name)
+    )
+</script></section><section undefined data-markdown><script type="text/template">
+### From This
+  case class Name(
+      firstName: String,
+      familyName: String,
+      otherNames: Seq[String],
+      preferredName: String
+    )
+
+### Generate a SimpleObjectBuilder:
+  (obj: Name) => (SimpleService, SessionId, Path) => {
+      val objectId = service.createBusinessObject(session, "name")
+
+      service.setBusinessObjectValue(session, objectId, 
+        "firstName", obj.firstName)
+
+      service.setBusinessObjectValue(session, objectId, 
+        "familyName", obj.familyName)
+
+      service.setBusinessObjectValue(session, objectId, 
+        "otherNames", obj.otherNames.mkString("|"))
+
+      service.setBusinessObjectValue(session, objectId, 
+        "preferredName", obj.preferredName)
+
+      // Object is now ready to send.
+      service.getPath(session, objectId)
+    }
+    }
+
+</script></section><section undefined data-markdown><script type="text/template">
+# First Steps
+
+    object SimpleObjectBuilder {
+      def apply[T] : SimpleObjectBuilder[T] 
+        = macro Macros.generateObjectBuilder[T]
+    }
+
+    object Macros {
+      def generateObjectBuilder[T: c.WeakTypeTag](c: Context)
+        : c.Expr[SimpleObjectBuilder[T]] = {
+
+        import c.universe._
+
+        ...
+
+        null
+      }
+    }
+</script></section><section undefined data-markdown><script type="text/template">
+## Getting a reference to the type.
+
+  case class Name(
+      firstName: String,
+      familyName: String,
+      otherNames: Seq[String],
+      preferredName: String
+    )
+
+  SimpleObjectBuilder[Name]
+
+### Macro
+
+    import c.universe._
+    
+    // Get a reference to the given type (i.e. Name).
+    val typeConstructor = weakTypeOf[T]
+
+    val parameters = typeConstructor.declarations
+      .filter(_.isTerm)
+      .map(_.asTerm)
+      .filter(term => term.isVal || term.isVar)
+</script></section><section undefined data-markdown><script type="text/template">
+## Slow down you're going too fast.
+
+    class SimpleServiceSpec extends Specification { def is = s2"""
+      SimpleService is badly written            ${ok}
+
+      Debug Function                            ${debugFunction}
+      """
+
+        def debugFunction = {
+
+          val builder = SimpleObjectBuilder[Name]
+
+          ok
+        }
+
+      }
+
+</script></section><section undefined data-markdown><script type="text/template">
+## Add a few `println`'s
+    
+    println(weakTypeOf[T].declarations)
+
+    => Scope{
+      val firstName: String;
+      private[this] val firstName: String;
+      val familyName: String;
+      private[this] val familyName: String;
+      val otherNames: Seq[String];
+      private[this] val otherNames: Seq[String];
+      val preferredName: String;
+      private[this] val preferredName: String;
+      def <init>(firstName: String,familyName: String,otherNames: Seq[String],preferredName: String): Name;
+      def copy(firstName: String,familyName: String,otherNames: Seq[String],preferredName: String): Name;
+      def copy$default$1: String @scala.annotation.unchecked.uncheckedVariance;
+      def copy$default$2: String @scala.annotation.unchecked.uncheckedVariance;
+      def copy$default$3: Seq[String] @scala.annotation.unchecked.uncheckedVariance;
+      def copy$default$4: String @scala.annotation.unchecked.uncheckedVariance;
+      override def productPrefix: String;
+      def productArity: Int;
+      def productElement(x$1: Int): Any;
+      override def productIterator: Iterator[Any];
+      def canEqual(x$1: Any): Boolean;
+      override def hashCode(): Int;
+      override def toString(): String;
+      override def equals(x$1: Any): Boolean
+    }
+</script></section><section undefined data-markdown><script type="text/template">
+      service.setBusinessObjectValue(session, objectId, 
+        "firstName", obj.firstName)
+
+      service.setBusinessObjectValue(session, objectId, 
+        "familyName", obj.familyName)
+
+      service.setBusinessObjectValue(session, objectId, 
+        "otherNames", obj.otherNames.mkString("|"))
+
+      service.setBusinessObjectValue(session, objectId, 
+        "preferredName", obj.preferredName)
+</script></section><section undefined data-markdown><script type="text/template">
+## Filtering out everything else
+
+    // Get the parameter symbols of the constructor.
+    val parameters = typeConstructor.declarations
+      .filter(_.isTerm)
+      .map(_.asTerm)
+      .filter(term => term.isVal || term.isVar)
+
+    println(parameters)
+
+    => List(
+        value firstName, 
+        value familyName, 
+        value otherNames, 
+        value preferredName
+      )
+</script></section><section undefined data-markdown><script type="text/template">
+## Getting the field names
+
+    def toDebugString(obj: AnyRef) = s"'${obj}': ${obj.getClass}"
+
+    println(parameters.map(_.name).map(toDebugString))
+
+
+    => List(
+        'firstName ': class scala.reflect.internal.Names$TermName_R, 
+        'familyName ': class scala.reflect.internal.Names$TermName_R, 
+        'otherNames ': class scala.reflect.internal.Names$TermName_R, 
+        'preferredName ': class scala.reflect.internal.Names$TermName_R
+    )
+</script></section><section undefined data-markdown><script type="text/template">
+## Reification
+
+    val createObject = reify {
+      (instance: T) =>
+      (service: SimpleService, sessionId: SessionId, path: Path) => {
+        val instanceId = service.createBusinessObject(sessionId, "objtype", path)
+
+        service.setBusinessObjectValue(sessionId, instanceId,
+          "name", "value")
+
+        service.getPath(sessionId, instanceId)
+      }
+    }
+</script></section><section undefined data-markdown><script type="text/template">
+## println to the rescue
+      
+      println(createObject)
+
+      => Expr[Name => ((simpleservice.SimpleService, simpleservice.SimpleService.SessionId, simpleservice.SimpleService.Path) => simpleservice.SimpleService.Path)]
+        (((instance: Name) => 
+        ((service: SimpleService, sessionId: SimpleService.SessionId, path: SimpleService.Path) => {
+
+        val instanceId = service.createBusinessObject(sessionId, path, service.createBusinessObject$default$3);
+        
+        service.setBusinessObjectValue(sessionId, instanceId, "name", "value");
+        
+        service.getPath(sessionId, instanceId)
+      })))
+</script></section><section undefined data-markdown><script type="text/template">
+## With a few tweaks.
+      
+      println(c.universe.showRaw(createObject))
+
+      => Expr(Function(List(ValDef(Modifiers(PARAM), 
+      newTermName("instance"), TypeTree(), EmptyTree)), 
+      Function(List(ValDef(Modifiers(PARAM), newTermName("service"), 
+      Ident(simpleservice.SimpleService), EmptyTree), ValDef(Modifiers(PARAM), 
+      newTermName("sessionId"), Select(Ident(simpleservice.SimpleService), newTypeName("SessionId")), 
+      EmptyTree), ValDef(Modifiers(PARAM), newTermName("path"), 
+      Select(Ident(simpleservice.SimpleService), newTypeName("Path")), 
+      EmptyTree)), Block(List(ValDef(Modifiers(), newTermName("instanceId"), TypeTree(), 
+      Apply(Select(Ident(newTermName("service")), newTermName("createBusinessObject")), 
+      List(Ident(newTermName("sessionId")), Literal(Constant("objType")), 
+      Ident(newTermName("path"))))), Apply(Select(Ident(newTermName("service")), 
+      newTermName("setBusinessObjectValue")), List(Ident(newTermName("sessionId")), 
+      Ident(newTermName("instanceId")), 
+      Literal(Constant("name")), Literal(Constant("value"))))), 
+      Apply(Select(Ident(newTermName("service")), newTermName("getPath")), 
+      List(Ident(newTermName("sessionId")), Ident(newTermName("instanceId"))))))))
+</script></section><section undefined data-markdown><script type="text/template">
+## More experimenting.
+
+    case class Test(a: Int, b: String)
+
+    val test = reify {
+      val instance : Test = Test(1, "b")
+      instance.a
+    }
+
+    println(c.universe.showRaw(test))
+
+    => Expr(Block(List(
+      ValDef(Modifiers(), newTermName("instance"), TypeTree(), 
+        Apply(
+          Select(Ident(newTermName("Test")), newTermName("apply")), 
+          List(Literal(Constant(1)), Literal(Constant("b")))))
+        ), 
+
+      Select(Ident(newTermName("instance")), newTermName("a")))
+    )
+</script></section><section undefined data-markdown><script type="text/template">
+## Adding in SimpleService
+
+    case class Test(a: Int, b: String)
+
+    val test = reify {
+      val instance : Test = null
+      val service : SimpleService = null
+      service.setBusinessObjectValue(0, 0, "b", instance.b)
+    }
+
+    println(c.universe.showRaw(test))
+</script></section><section undefined data-markdown><script type="text/template">
+## Now its making sense.
+
+    Expr(Block(List(
+      
+      // val instance : Test = null
+      ValDef(Modifiers(), newTermName("instance"), TypeTree(), Literal(Constant(null))), 
+
+      // val service : SimpleService = null
+      ValDef(Modifiers(), newTermName("service"), Ident(simpleservice.SimpleService), Literal(Constant(null)))), 
+
+
+      // service.setBusinessObjectValue(0, 0, "b", instance.b)
+      Apply(
+        Select(Ident(newTermName("service")), newTermName("setBusinessObjectValue")), 
+
+        List(
+          Literal(Constant(0)), 
+          Literal(Constant(0)), 
+          Literal(Constant("b")), 
+          Select(Ident(newTermName("instance")), newTermName("b"))
+        )
+      )
+    ))
+</script></section><section undefined data-markdown><script type="text/template">
+      service.setBusinessObjectValue(sessionId, instanceId, 
+        "firstName", instance.firstName)
+
+      service.setBusinessObjectValue(session, instanceId, 
+        "familyName", instance.familyName)
+
+      service.setBusinessObjectValue(session, instanceId, 
+        "otherNames", instance.otherNames.mkString("|"))
+
+      service.setBusinessObjectValue(session, instanceId, 
+        "preferredName", instance.preferredName)
+</script></section><section undefined data-markdown><script type="text/template">
+## A bit of copy-pasting.
+
+    val appliedParameters = parameters.map(p => {
+      Apply(
+        Select(Ident(newTermName("service")), newTermName("setBusinessObjectValue")),
+        List(
+          Ident(newTermName("sessionId")),
+          Ident(newTermName("instanceId")),
+          Ident(p.name.toTermName),
+          Select(
+            Ident(newTermName("instance")),
+            p
+          ) : Tree
+        )
+      )
+    })
+
+</script></section><section undefined data-markdown><script type="text/template">
+## Check with println
+
+    println(appliedParameters)
+
+    => List(
+        service.setBusinessObjectValue(sessionId, instanceId,
+          firstName , instance.firstName), 
+
+        service.setBusinessObjectValue(sessionId, instanceId,
+          familyName , instance.familyName),
+
+        service.setBusinessObjectValue(sessionId, instanceId,
+          otherNames , instance.otherNames),
+
+        service.setBusinessObjectValue(sessionId, instanceId,
+          preferredName , instance.preferredName)
+    )
+</script></section><section undefined data-markdown><script type="text/template">
+## But we wanted Strings
+
+    val appliedParameters = parameters.map(p => {
+      Apply(
+        Select(Ident(newTermName("service")), newTermName("setBusinessObjectValue")),
+        List(
+          Ident(newTermName("sessionId")),
+          Ident(newTermName("instanceId")),
+          Literal(Constant(p.name.toTermName.toString.trim)) : Tree,
+          Select(
+            Ident(newTermName("instance")),
+            p
+          ) : Tree
+        )
+      )
+    })
+</script></section><section undefined data-markdown><script type="text/template">
+## Checking again.
+
+    println(appliedParameters)
+
+    => List(
+        service.setBusinessObjectValue(sessionId, instanceId,
+          "firstName", instance.firstName), 
+
+        service.setBusinessObjectValue(sessionId, instanceId, 
+          "familyName", instance.familyName), 
+
+        service.setBusinessObjectValue(sessionId, instanceId, 
+          "otherNames", instance.otherNames), 
+
+        service.setBusinessObjectValue(sessionId, instanceId, 
+          "preferredName", instance.preferredName)
+      )
+</script></section><section undefined data-markdown><script type="text/template">
+## An updated CreateObject
+
+    val createObject = reify {
+      (instance: T) =>
+      (service: SimpleService, sessionId: SessionId, path: Path) => {
+        val instanceId = service.createBusinessObject(sessionId, "objType", path)
+
+        c.Expr[Unit](
+          Block(appliedParameters.toSeq: _*)
+        ).splice
+
+        service.getPath(sessionId, instanceId)
+      }
+    }
+</script></section><section undefined data-markdown><script type="text/template">
+## Checking with PrintLn
+
+    Expr[Name => ((simpleservice.SimpleService, simpleservice.SimpleService.SessionId, simpleservice.SimpleService.Path) => simpleservice.SimpleService.Path)](((instance: Name) => ((service: SimpleService, sessionId: SimpleService.SessionId, path: SimpleService.Path) => {
+      val instanceId = service.createBusinessObject(sessionId, "objType", path);
+      {
+        service.setBusinessObjectValue(sessionId, instanceId, 
+          "firstName", instance.firstName);
+
+        service.setBusinessObjectValue(sessionId, instanceId, 
+          "familyName", instance.familyName);
+
+        service.setBusinessObjectValue(sessionId, instanceId, 
+          "otherNames", instance.otherNames);
+
+        service.setBusinessObjectValue(sessionId, instanceId, 
+          "preferredName", instance.preferredName)
+      };
+      service.getPath(sessionId, instanceId)
+    })))
+</script></section><section undefined data-markdown><script type="text/template">
+## Oh no
+
+    [error] /Users/laurencer/src/scala-syd-talk/examples/src/test/scala/SimpleServiceSpec.scala:18: 
+      value firstName  is not a member of Name
+
+    [error]     val builder = SimpleObjectBuilder[Name]
+
+A fix (notice the double space after firstName):
+
+    Select(
+      Ident(newTermName("instance")),
+      newTermName(p.name.toTermName.toString.trim)
+    ) : Tree
+
+What Changed?
+
+    p -> newTermName(p.name.toTermName.toString.trim)
+</script></section><section undefined data-markdown><script type="text/template">
+## We forgot something.
+
+    [error] /Users/laurencer/src/scala-syd-talk/examples/src/test/scala/SimpleServiceSpec.scala:18: type mismatch;
+
+    [error]  found   : Seq[String]
+    [error]  required: String
+
+    [error]     val builder = SimpleObjectBuilder[Name]
+
+    // Unchangeable API.
+    def setBusinessObjectValue(sessionId: SessionId, 
+       instance: Id, 
+       name: String, 
+       value: String // Wants a String 
+  ) : Result
+
+    case class Name(
+      firstName: String,
+      familyName: String,
+      otherNames: Seq[String], // Not a String :(
+      preferredName: String
+    )
+</script></section><section undefined data-markdown><script type="text/template">
+## To Fix This We Need Better Type Handling
+
+- Different behaviours for different types.
+- Nicer errors if we give it a type it cannot handle.
+- Customise the behaviour through annotations.
+</script></section><section undefined data-markdown><script type="text/template">
+## We need some annotations.
+
+These will change how our code gets generated.
+
+    case class ObjectType(objType: String) 
+      extends scala.annotation.StaticAnnotation
+
+    case class Ignore
+      extends scala.annotation.StaticAnnotation
+
+    case class ObjectPath(path: String)
+      extends scala.annotation.StaticAnnotation
+</script></section><section undefined data-markdown><script type="text/template">
+## Now with Annotations
+
+    @ObjectType("nickname")
+    case class Nickname(
+      name: String
+    )
+
+    @ObjectType("name")
+    case class Name(
+      firstName: String,
+      familyName: String,
+      otherNames: Seq[String],
+      preferredName: String,
+      @Ignore twitterHandle: String,
+      @ObjectPath("/nicknames") nickname: Nickname
+    )
+</script></section><section undefined data-markdown><script type="text/template">
+## Rewriting to use the Constructor
+
+NB. Annotations are on the constructor arguments - not the fields.
+
+  // Usage: SimpleObjectBuilder[Name]
+    
+    // Get a reference to the constructor of the type.
+    val typeConstructor = weakTypeOf[T]
+
+    val constructor = typeConstructor.declarations.collect({
+      case MethodSymbolTag(method) if method.isPrimaryConstructor => method
+    }).head
+
+    // Get the parameter symbols of the constructor.
+    // Filter out any with the @Ignore annotation.
+    val parameters = constructor.paramss.head.filter(p =>
+      p.annotations.find(_.tpe =:= typeOf[Ignore]).isEmpty
+    )
+</script></section><section undefined data-markdown><script type="text/template">
+## Type-based behaviour
+
+    // List of types we can directly serialise
+    val acceptableTypes = List(
+      typeOf[Int],
+      typeOf[String],
+      typeOf[Long]
+    )
+    
+    def isAcceptableType(pType: Type) = 
+      acceptableTypes.foldRight(false)((typ, memo) => memo || pType <:< typ)
+
+    val appliedParameters = parameters.map(p => {
+
+      if (p.typeSignature <:< typeOf[Seq[_]]) {
+        generateSequenceSetter(p)
+      } else if (isAcceptableType(p.typeSignature)) {
+        generateValueSetter(p)
+      } else {
+        val pathAnnotation = p.annotations.find(_.tpe =:= typeOf[ObjectPath])
+        pathAnnotation match {
+          case Some(pathAnnotation) =>
+            generateObjectSetter(p, pathAnnotation.scalaArgs.head)
+          case None => {
+            c.abort(c.enclosingPosition, s"Complex object in field `${p.name}` on type `${typeConstructor}` does not have @ObjectPath annotation. Use @Ignore if you don't want it serialized.")
+          }
+        }
+      }
+    })
+</script></section><section undefined data-markdown><script type="text/template">
+## Win.
+
+    Expr[Name => ((simpleservice.SimpleService, simpleservice.SimpleService.SessionId, simpleservice.SimpleService.Path) => simpleservice.SimpleService.Path)](((instance: Name) => ((service: SimpleService, sessionId: SimpleService.SessionId, path: SimpleService.Path) => {
+      val instanceId = service.createBusinessObject(sessionId, "objType", path);
+      {
+        service.setBusinessObjectValue(sessionId, instanceId, 
+          "firstName", instance.firstName);
+        
+        service.setBusinessObjectValue(sessionId, instanceId, 
+          "familyName", instance.familyName);
+        
+        service.setBusinessObjectValue(sessionId, instanceId, 
+          "otherNames", instance.otherNames.mkString("|"));
+        
+        service.setBusinessObjectValue(sessionId, instanceId, 
+          "preferredName", instance.preferredName);
+        
+        SimpleObjectBuilder.apply[Nickname](instance.nickname)(service, sessionId, "/nickname")
+      };
+      service.getPath(sessionId, instanceId)
+    })))
+</script></section><section undefined data-markdown><script type="text/template">
+## Advantages over Reflection
+
+- Reflection is really slow.
+- Reflection is brittle - it breaks at run time and not at compile time.
+- Java Reflection doesn't work well with Scala types.
+</script></section><section undefined data-markdown><script type="text/template">
+## Advantages over Hand-Written Code
+
+- Compile time errors if you screw up.
+- No duplication of code/field names.
+</script></section><section undefined data-markdown><script type="text/template">
+# Why not macros?
+</script></section><section undefined data-markdown><script type="text/template">
+## Magic.
+
+- Hard to read and debug.
+- Painful for end-users when they don't work.
+- Time-consuming to write.
+</script></section><section undefined data-markdown><script type="text/template">
+# Thank you!
+
+## Questions?</script></section></div>
+        </div>
+        <script src="/lib/js/head.min.js"></script>
+        <script src="/js/reveal.js"></script>
         <script>
             Reveal.initialize({
                 controls: true,
@@ -776,11 +881,13 @@ def isAcceptableType(pType: Type) =
                 transition: Reveal.getQueryHash().transition || 'default',
                 // Optional libraries used to extend on reveal.js
                 dependencies: [
-                    { src: 'classList.js', condition: function() { return !document.body.classList; } },
-                    { src: 'marked.js', condition: function() { return !!document.querySelector('[data-markdown]'); } },
-                    { src: 'markdown.js', condition: function() { return !!document.querySelector('[data-markdown]'); } }
+                    { src: '/lib/js/classList.js', condition: function() { return !document.body.classList; } },
+                    { src: '/plugin/markdown/marked.js', condition: function() { return !!document.querySelector('[data-markdown]'); } },
+                    { src: '/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector('[data-markdown]'); } }
                 ]
             });
-        </script><script type="text/javascript" src="marked.js"></script><script type="text/javascript" src="markdown.js"></script>
-    
-<script src="highlight.min.js"></script></body><style type="text/css">embed[type*="application/x-shockwave-flash"],embed[src*=".swf"],object[type*="application/x-shockwave-flash"],object[codetype*="application/x-shockwave-flash"],object[src*=".swf"],object[codebase*="swflash.cab"],object[classid*="D27CDB6E-AE6D-11cf-96B8-444553540000"],object[classid*="d27cdb6e-ae6d-11cf-96b8-444553540000"],object[classid*="D27CDB6E-AE6D-11cf-96B8-444553540000"]{	display: none !important;}</style></html>
+        </script>
+        <script src="highlight.min.js">
+        <link rel="stylesheet" href="zenburn.min.css">
+    </body>
+</html>
