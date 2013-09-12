@@ -3,9 +3,9 @@
 <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
         <meta charset="utf-8">
         <title>Reveal.js</title>
-        <link rel="stylesheet" href="css/reveal.css">
-        <link rel="stylesheet" href="css/theme/default.css" id="theme">
-  <link rel="stylesheet" href="http://yandex.st/highlightjs/7.3/styles/zenburn.min.css">
+        <link rel="stylesheet" href="reveal.css">
+        <link rel="stylesheet" href="default.css" id="theme">
+  <link rel="stylesheet" href="zenburn.min.css">
     <style type="text/css"></style></head>
     <body style="">
         <div class="reveal default center" data-transition-speed="default" data-background-transition="default">
@@ -776,9 +776,9 @@ def isAcceptableType(pType: Type) =
                 transition: Reveal.getQueryHash().transition || 'default',
                 // Optional libraries used to extend on reveal.js
                 dependencies: [
-                    { src: '/lib/js/classList.js', condition: function() { return !document.body.classList; } },
-                    { src: '/plugin/markdown/marked.js', condition: function() { return !!document.querySelector('[data-markdown]'); } },
-                    { src: '/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector('[data-markdown]'); } }
+                    { src: 'classList.js', condition: function() { return !document.body.classList; } },
+                    { src: 'marked.js', condition: function() { return !!document.querySelector('[data-markdown]'); } },
+                    { src: 'markdown.js', condition: function() { return !!document.querySelector('[data-markdown]'); } }
                 ]
             });
         </script><script type="text/javascript" src="marked.js"></script><script type="text/javascript" src="markdown.js"></script>
