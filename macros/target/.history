@@ -1,0 +1,6 @@
+compile
+exit
+compile
+run
+set scalacOptions += "-deprecation"
+compile
